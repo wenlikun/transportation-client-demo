@@ -7,6 +7,16 @@ import "com.ctrip.flight.agg.shopping.contract.transportation.travix.proto";
 option java_package = "com.ctrip.flight.agg.shopping.contract.transportation.request";
 option java_multiple_files = true;
 
+message RouteSearchRequestType {
+    // 从响应报文中获取
+    string RequestMessageKey = 1;
+    // 反查参数，和原接口反查参数一致
+    RouteSearchType RouteSearch = 2;
+    // 请求类型，1: 国际请求; 2:国内请求。影响请求路由的选择！
+    int32 IntlOrDomesticRequest = 3;
+
+}
+
 message SearchRequestType {
     // 请求头
     com.ctrip.flight.agg.shopping.contract.message.RequestHeaderType RequestHeader = 1;
@@ -53,6 +63,21 @@ message SearchCriteriaType {
 
     // 适配查询扩展
     AdaptedOptionType AdaptedOption = 14;
+
+    // 交叉辅营场景查询参数
+    CrossSearchOptionType CrossSearchOption = 15;
+
+    // 实时查询参数
+    RealControlOption RealControlOption = 16;
+}
+
+message RealControlOption {
+  // Repricing场景查询参数: 1 repricing查询, 2 大系统列表查询无结果, 4 冷门航线
+  int32 RepricingType = 1;
+  // 分程查询参数
+  int32 SegmentSearchType = 2;
+  // Repricing场景返回类型: 0(默认), 有新运价才返回结果, 1 始终需要返回结果
+  int32 RepricingReturnType = 3;
 }
 
 message JourneyRequestType {
@@ -68,6 +93,14 @@ message JourneyRequestType {
 
 message LocationType {
     // Location的类型，1:CityCode; 2:CityID; 3:AirportCode; 4:RegionCode
+    int32 Type = 1;
+    // 地点
+    string Location = 2;
+}
+
+// 用户位置参数，适用于交叉辅营场景
+message CrossLocationType {
+    // CrossLocationType的类型, 1: CityID; 2: CountryID
     int32 Type = 1;
     // 地点
     string Location = 2;
@@ -138,6 +171,8 @@ message ResultControlType {
     MultiTrafficControlType MultiTrafficControl = 5;
     // 0:no control;    1:nonStop Direct result;     2:direct result(has stop);    4:only transfer result;
     int32 DirectControlType = 6;
+    // 模块功能限制选项
+    ModuleAccessOptionType ModuleAccessOption = 7;
 }
 
 message CoordinateType {
@@ -229,6 +264,8 @@ message SpecifiedJourneyOptionType {
     LocationType ArriveLocation = 8;
     // 票号,可以为空
     IntegerType ProductDetailIndex = 9;
+    // 到达时间。格式: yyyy-MM-dd HH:mm:ss。e.g:2021-08-30 00:00:00
+    string ArriveDate = 10;
 }
 
 message FlightSpecifiedOptionType {
@@ -283,4 +320,55 @@ message MultiTrafficControlType{
         1：机票
     */
     int32 TransportType = 1;
+}
+
+// 交叉辅营场景查询参数
+message CrossSearchOptionType {
+    // 用户位置参数
+    UserPositionType UserPosition = 1;
+}
+
+// 用户位置参数
+message UserPositionType {
+    // 业务场景  1: 机酒
+    int32 BizType = 1;
+    // 用户IP
+    string UserIP = 2;
+    // 经度
+    double Longitude = 3;
+    // 纬度
+    double Latitude = 4;
+    // 位置信息列表
+    repeated CrossLocationType Location = 5;
+}
+
+// 模块功能限制选项
+message ModuleAccessOptionType {
+    // 模块功能限制列表，每个实体中白名单或黑名单限填一个，同时填写仅看黑名单
+    repeated ModuleAccessType ModuleAccess = 1;
+}
+
+// 模块功能限制实体
+message ModuleAccessType {
+    // 功能模块类型：1、大交通；2、推荐位；3、机酒
+    int32 Type = 1;
+    /*
+     * 白名单列表，列表中的填写的功能不一定会出，需要结合其他逻辑，但不在列表中的功能一定会拦掉
+     * 单程推荐位：
+     *     空铁推荐：FlightXTrain；
+     *     邻近城市推荐：NearFlight；
+     *     临近日期推荐：NearTimeFlight；
+     *     单推往返：Single2Round；
+     *     中转推荐：TransferFlight；
+     *     直铁推荐：Train；
+     * 单程大交通：
+     *     空铁：FlightXTrain；
+     *     邻近城市：NearFlight；
+     *     临近日期：NearTimeFlight；
+     *     直铁：Train；
+     *     直巴：DirectBus；
+     */
+    repeated string Allow = 2;
+    // 黑名单列表，在列表中的功能一定会拦掉，含*表示拦截所有，其余可填内容同白名单列表
+    repeated string Block = 3;
 }
